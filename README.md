@@ -32,3 +32,7 @@ Interestingly, however, I found that this more primitive approach greatly simpli
 
 ### Compute Shaders
 
+Step 3 described above (generating the image texture) is evidently the most important, and was implemented in this engine by using GLSL compute shaders, rather than embedding this computation within the fragment shader. The reasoning for doing this is twofold:
+
+1) Putting the raytracing computation within a compute shader helps to break up the rendering pipeline into clearer pieces. This becomes particularly important when we choose to have a variety of scenes and require multiple shaders. Putting the raytracing in the compute shader also makes the code less repetitive; the vertex shader ALWAYS builds the quad, and the fragment shader ALWAYS applies the texture. This means that we can have __1__ vertex+fragment program and then multiple compute programs for different scenes, rather than multiple fragment shaders that combine with the same vertex shader (
+   Vertex (Quad) -> Compute (Raytrace) -> Fragment (Texture) -> Render      VS     Vertex (Quad) -> Fragment (Raytrace + Texture) -> Render

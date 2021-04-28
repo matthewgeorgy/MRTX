@@ -2,6 +2,8 @@
 
 This is my raytracing rendering engine (code-jokename: MRTX) written using C++ and GLSL compute shaders (__heavily__).
 
+## [SCREENSHOTS](screenshots/screenshots.md)
+
 ## Rationale
 
 I spent quite a few months getting into computer graphics and graphics programming. I started with regular OpenGL and rasterization for my Solar System project (https://github.com/matthewgeorgy/solarsystem), and then decided to dedicate some time to learn and understand raytracing.

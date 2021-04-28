@@ -5,7 +5,7 @@ This is my raytracing rendering engine (code-jokename: MRTX) written using C++ a
 ## Rationale
 
 I spent quite a few months getting into computer graphics and graphics programming. I started with regular OpenGL and rasterization for my Solar System project (https://github.com/matthewgeorgy/solarsystem), and then decided to dedicate some time to learn and understand raytracing.
-After reading "Raytracing in One Weekend" (hereafter referred to as 'RTIOW' by Peter Shirley (https://raytracing.github.io/), the goal for my next project was to build a simple raytracing engine that works in real-time; meaning that you can move and look around within the scene, rather than a static image that RTIOW generates.
+After reading "Raytracing in One Weekend" (hereafter referred to as 'RTIOW') by Peter Shirley (https://raytracing.github.io/), the goal for my next project was to build a simple raytracing engine that works in real-time; meaning that you can move and look around within the scene, rather than a static image that RTIOW generates.
 
 ## How + Challeneges
 
@@ -34,6 +34,31 @@ Interestingly, however, I found that this more primitive approach greatly simpli
 
 Step 3 described above (generating the image texture) is evidently the most important, and was implemented in this engine by using GLSL compute shaders, rather than embedding this computation within the fragment shader. The reasoning for doing this is twofold:
 
-1. Putting the raytracing computation within a compute shader allows us to break up the pipeline into more specific pieces; namely, it allows us to separate the raytracing (step 3) from the texture application (step 4). This is very important for when we want to render the scene statically with a higher sample count, in which case we want to raytrace the image  __ONCE__ and reuse the texture over multiple frames. Our pipeline then becomes this: Vertex (Quad) -> Compute (Raytrace) -> Fragment (Texture) -> Render
+1. Putting the raytracing computation within a compute shader allows us to break up the pipeline into more specific pieces; namely, it allows us to separate the raytracing (step 3) from the texture application (step 4). This is very important for when we want to render the scene statically with a higher sample count, in which case we want to raytrace the image __ONCE__ and reuse the texture over multiple frames. Our pipeline then becomes this: Vertex (Quad) -> Compute (Raytrace) -> Fragment (Texture) -> Render
 
 2. Performing the raytracing within a compute shader allows us to utilize the parallel computation capabilities of the GPU (which is what it excels at). This is possible because we calculate the color of each pixel individually (which is what RTIOW does), so parallelizing this computation greatly improves performance; in my case, the FPS increased by 10x when modifiying the compute shader to use multiple workgroups + invocations. 
+
+### GLSL Loops
+
+If you don't know, GLSL (and most shading languages as far as I know) don't deal with loops such as `for` and `while` very nicely. Why? I'm not 100% sure, as I don't know how GPU's internally execute instructions (and how GLSL translates into these instructions). This why that you may see code that looks something like this:
+
+  ```
+    scene.materials[i].type = MAT_LAMBERTIAN;
+    scene.materials[i].albedo = vec3(1.0, 0.0, 0.0); 
+    ...
+    i++;
+    
+    scene.materials[i].type = MAT_LAMBERTIAN;
+    scene.materials[i].albedo = vec3(1.0, 0.0, 0.0); 
+    ...
+    i++;
+    
+    .
+    .
+    .
+  ```
+  
+This from the checkered texture example, as we require multiple spheres in order to create the scene. RTIOW does this by simply rolling this procedure into a loop and using RNG to determine the position, color, etc. of each sphere. We can't do this here because:
+
+1) We don't want the spheres to randomly change position each frame; RTIOW can use RNG in this fashion because it only produces a static image.
+2) Loops significantly decrease performance, hence why I've unrolled them like in the example above.

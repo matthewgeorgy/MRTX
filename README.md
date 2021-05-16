@@ -2,6 +2,9 @@
 
 This is my raytracing rendering engine (code-jokename: MRTX) written using C++ and GLSL compute shaders (__heavily__).
 
+![alt text](./preview.gif)
+(very poor quality due to gyazo)
+
 ## [SCREENSHOTS](screenshots/screenshots.md)
 
 ## Rationale

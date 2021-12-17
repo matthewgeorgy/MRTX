@@ -1,8 +1,9 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#define _CRT_SECURE_NO_WARNINGS
+#include <glad.h>
+#include <glfw3.h>
 #define MMATH_IMPL
 #include <mmath.h>
-#include <loadshader.h>
+#include "..\inc\gl_loadshader.hpp"
 #define NK_INCLUDE_FIXED_TYPES
 #define NK_INCLUDE_STANDARD_IO
 #define NK_INCLUDE_STANDARD_VARARGS
@@ -16,23 +17,24 @@
 #include <nuklear.h>
 #include <nuklear_glfw_gl3.h>
 
-#define SCR_WIDTH   1280
-#define SCR_HEIGHT  720
+#define SCR_WIDTH   1600
+#define SCR_HEIGHT  900
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
+#define UNREFERENCED_PARAMETER(__x)	__x
 
 void framebuffer_size_callback(GLFWwindow *window, s32 width, s32 height);
 void mouse_callback(GLFWwindow *window, f64 x_pos, f64 y_pos);
 void process_input(GLFWwindow *window, f32 delta_time);
-u32 load_comp_shader(const char *cs_path);
+/* u32 load_shader(const char *cs_path); */
 void reset_camera(void);
 
-typedef struct _TAG_camera
+struct camera_t
 {
     vec3_t lookfrom;
     vec3_t lookat;
     vec3_t up;
-} camera_t;
+};
 
 camera_t cam;
 vec2_t window_size = {SCR_WIDTH, SCR_HEIGHT};
@@ -75,28 +77,18 @@ main()
     /////////////////////////////////////////////////////////////////////////
     // SHADER SETUP
 
-    u32 render_shader = load_shader("compute.vert.glsl", "compute.frag.glsl");
-    u32 comp_shader_ch7 = load_comp_shader("chapter7.comp.glsl");
-    u32 comp_shader_ch8 = load_comp_shader("chapter8.comp.glsl");
-    u32 comp_shader_ch9 = load_comp_shader("chapter9.comp.glsl");
-    u32 comp_shader_ch10 = load_comp_shader("chapter10.comp.glsl");
-    u32 comp_shader_ch11 = load_comp_shader("chapter11.comp.glsl");
-    u32 comp_shader_hgb = load_comp_shader("hollow glass ball.comp.glsl");
-    u32 comp_shader_chk = load_comp_shader("checkered texture.comp.glsl");
-    u32 comp_shader_lamp = load_comp_shader("lamp.comp.glsl");
-    u32 comp_shader_plane = load_comp_shader("plane.comp.glsl");
-
+    u32 render_shader = load_shader("..\\src\\shaders\\compute.vert", "..\\src\\shaders\\compute.frag");
     u32 shaders[] =
     {
-        comp_shader_ch7,
-        comp_shader_ch8,
-        comp_shader_ch9,
-        comp_shader_ch10,
-        comp_shader_ch11,
-        comp_shader_hgb,
-        comp_shader_chk,
-        comp_shader_lamp,
-        comp_shader_plane
+		load_shader("..\\src\\shaders\\chapter7.comp"),
+		load_shader("..\\src\\shaders\\chapter8.comp"),
+		load_shader("..\\src\\shaders\\chapter9.comp"),
+		load_shader("..\\src\\shaders\\chapter10.comp"),
+		load_shader("..\\src\\shaders\\chapter11.comp"),
+		load_shader("..\\src\\shaders\\hollow glass ball.comp"),
+		load_shader("..\\src\\shaders\\checkered texture.comp"),
+		load_shader("..\\src\\shaders\\lamp.comp"),
+		load_shader("..\\src\\shaders\\plane.comp")
     };
 
     u32 comp_shader_index = 0;
@@ -123,7 +115,7 @@ main()
     cam.up.z = 0;
 
     mat4_t view;
-    mat4_t proj = mat4_perspective(70.0f, (f32)SCR_WIDTH / (f32)SCR_HEIGHT, 0.1, 100.0f);
+    mat4_t proj = mat4_perspective(70.0f, (f32)SCR_WIDTH / (f32)SCR_HEIGHT, 0.1f, 100.0f);
 
     f32 current_frame;
     f32 last_frame = 0.0f;
@@ -237,6 +229,8 @@ main()
             {
                 reset_camera();
             }
+			nk_layout_row_static(ctx, 10, 200, 1);
+			nk_text(ctx, "To increase sampling, press R", 50, NK_LEFT);
         } nk_end(ctx);
 
         nk_glfw3_render(&glfw, NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
@@ -254,9 +248,10 @@ framebuffer_size_callback(GLFWwindow *window,
                           s32 width,
                           s32 height)
 {
+	UNREFERENCED_PARAMETER(window);
     glViewport(0, 0, width, height);
-    window_size.x = width;
-    window_size.y = height;
+    window_size.x = (f32)width;
+    window_size.y = (f32)height;
 }
 
 void
@@ -306,40 +301,6 @@ process_input(GLFWwindow *window,
     }
 }
 
-u32 
-load_comp_shader(const char *cs_path)
-{
-    FILE    *fptr;
-    s32     file_len;
-    GLchar  *shader_source;
-
-    // COMPUTE SHADER
-    fptr = fopen(cs_path, "rb");
-    fseek(fptr, 0, SEEK_END);
-    file_len = ftell(fptr);
-    fseek(fptr, 0, SEEK_SET);
-    shader_source = (GLchar *)malloc(file_len + 1);
-    fread(shader_source, 1, file_len, fptr);
-    shader_source[file_len] = 0;
-    fclose(fptr);
-
-    u32 compute = glCreateShader(GL_COMPUTE_SHADER);
-    glShaderSource(compute, 1, &shader_source, NULL);
-    glCompileShader(compute);
-    check_compile_errors(compute, COMPUTE, cs_path);
-    free(shader_source);
-
-    // SHADER PROGRAM
-    u32 program = glCreateProgram();
-    glAttachShader(program, compute);
-    glLinkProgram(program);
-    check_compile_errors(program, PROGRAM, cs_path);
-
-    glDeleteShader(compute);
-
-    return program;
-}
-
 void
 mouse_callback(GLFWwindow *window,
                f64 x_pos,
@@ -360,8 +321,8 @@ mouse_callback(GLFWwindow *window,
             first_mouse = FALSE;
         }
 
-        f32 x_offset = x_pos - last_x;
-        f32 y_offset = last_y - y_pos;
+        f32 x_offset = (f32)(x_pos - last_x);
+        f32 y_offset = (f32)(last_y - y_pos);
         last_x = x_pos;
         last_y = y_pos;
 

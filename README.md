@@ -1,6 +1,6 @@
-# glsl-raytracer
+# MRTX
 
-This is my raytracing rendering engine (code-jokename: MRTX) written using C++ and GLSL compute shaders (__heavily__).
+This is my raytracing rendering engine written using C++ and GLSL compute shaders.
 
 ![alt text](./preview.gif)
 (very poor quality due to gyazo)
@@ -41,11 +41,11 @@ Step 3 described above (generating the image texture) is evidently the most impo
 
 1. Putting the raytracing computation within a compute shader allows us to break up the pipeline into more specific pieces; namely, it allows us to separate the raytracing (step 3) from the texture application (step 4). This is very important for when we want to render the scene statically with a higher sample count, in which case we want to raytrace the image __ONCE__ and reuse the texture over multiple frames. Our pipeline then becomes this: Vertex (Quad) -> Compute (Raytrace) -> Fragment (Texture) -> Render
 
-2. Performing the raytracing within a compute shader allows us to utilize the parallel computation capabilities of the GPU (which is what it excels at). This is possible because we calculate the color of each pixel individually (which is what RTIOW does), so parallelizing this computation greatly improves performance; in my case, the FPS increased by 10x when modifiying the compute shader to use multiple workgroups + invocations. 
+2. Performing the raytracing within a compute shader allows us to utilize the parallel computation capabilities of the GPU (which is what it excels at). This is possible because we calculate the color of each pixel individually and independently, so parallelizing this computation greatly improves performance. In my case, the FPS increased by ~10x when modifiying the compute shader to use multiple workgroups + invocations. 
 
 ### GLSL Loops
 
-If you don't know, GLSL (and most shading languages as far as I know) don't deal with loops such as `for` and `while` very nicely. Why? I'm not 100% sure, as I don't know how GPU's internally execute instructions (and how GLSL translates into these instructions). This why that you may see code that looks something like this:
+If you don't know, GLSL (and most shading languages as far as I know) don't deal with loops such as `for` and `while` very nicely. This is because GPUs don't to play very nicely with loops and branches (branching is BAD for SIMD). That's why you may see code that looks something like this:
 
   ```
     scene.materials[i].type = MAT_LAMBERTIAN;
